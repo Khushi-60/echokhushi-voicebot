@@ -4,6 +4,136 @@
 <meta charset="UTF-8">
 <title>EchoKhushi – Voice Bot</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+  <h2>🎙️ EchoKhushi</h2>
+  <p>Ask me anything about my journey.</p>
+
+  <div id="chatBox" class="chat-box"></div>
+
+  <input id="input" placeholder="Type or speak your question..." />
+  <br><br>
+
+  <button id="speakBtn">🎤 Speak</button>
+  <button onclick="ask()">💬 Ask</button>
+
+  <p style="font-size:0.85em;color:#888;">No setup • No API key • Just talk</p>
+</div>
+
+<script>
+const input = document.getElementById("input");
+const chatBox = document.getElementById("chatBox");
+
+// Session chat log
+let chatLog = [];
+
+// 🎤 Speech Recognition
+document.getElementById("speakBtn").onclick = () => {
+  const SpeechRecognition =
+    window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  if (!SpeechRecognition) {
+    alert("Speech recognition not supported in this browser");
+    return;
+  }
+
+  const rec = new SpeechRecognition();
+  rec.lang = "en-US";
+
+  rec.onresult = e => {
+    input.value = e.results[0][0].transcript;
+    ask();
+  };
+
+  rec.start();
+};
+
+// 💬 Ask backend
+async function ask() {
+  const question = input.value.trim();
+  if (!question) return;
+
+  // Append user's question to chat log
+  appendMessage("user", question);
+  input.value = "";
+
+  try {
+    // Send question to backend
+    const res = await fetch("https://echokhushi-voicebot-2.onrender.com/ask", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question })
+    });
+
+    const data = await res.json();
+    const answer = data.answer || "Sorry, I could not respond.";
+
+    // Append bot's answer to chat log
+    appendMessage("bot", answer);
+    speak(answer);
+  } catch (err) {
+    appendMessage("bot", "Error talking to server");
+  }
+}
+
+// Append message to chat box
+function appendMessage(sender, text) {
+  chatLog.push({ sender, text });
+
+  const msgDiv = document.createElement("div");
+  msgDiv.classList.add("message", sender);
+  msgDiv.textContent = text;
+
+  chatBox.appendChild(msgDiv);
+  chatBox.scrollTop = chatBox.scrollHeight; // auto-scroll
+}
+
+// 🔊 Female voice TTS
+function speak(text) {
+  if (!("speechSynthesis" in window)) return;
+
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = "en-IN"; // Indian English
+
+  function chooseIndianFemaleVoice() {
+    const voices = speechSynthesis.getVoices();
+    let voice =
+      voices.find(v =>
+        v.lang === "en-IN" &&
+        /female|woman|veena|heera|lekha|ravi|zira/i.test(v.name)
+      ) ||
+      voices.find(v => v.lang === "en-IN") ||
+      voices.find(v =>
+        v.lang.startsWith("en") &&
+        /female|woman|zira|susan|samantha/i.test(v.name)
+      ) ||
+      voices[0];
+
+    if (voice) utterance.voice = voice;
+    speechSynthesis.speak(utterance);
+  }
+
+  if (speechSynthesis.getVoices().length === 0) {
+    speechSynthesis.onvoiceschanged = chooseIndianFemaleVoice;
+  } else {
+    chooseIndianFemaleVoice();
+  }
+}
+</script>
+</body>
+</html>
+
+
+
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>EchoKhushi – Voice Bot</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="style.css">
 <!-- <style>
 body {
@@ -219,4 +349,4 @@ function speak(text) {
 </script> -->
 
 </body>
-</html>
+</html> -->
