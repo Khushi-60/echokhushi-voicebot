@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>EchoKhushi – Voice Bot</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f4f4f4;
+  text-align: center;
+  padding: 2em;
+}
+.container {
+  background: #fff;
+  max-width: 420px;
+  margin: auto;
+  padding: 2em;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px #0001;
+}
+button {
+  padding: 0.7em 1.3em;
+  font-size: 1.1em;
+  border-radius: 8px;
+  border: none;
+  background: #6366f1;
+  color: white;
+  cursor: pointer;
+  margin: 0.5em;
+}
+input {
+  width: 85%;
+  padding: 0.6em;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+.response {
+  margin-top: 1em;
+  background: #f6f6f6;
+  padding: 1em;
+  border-radius: 8px;
+  min-height: 60px;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h2>🎙️ EchoKhushi</h2>
+  <p>Ask me anything about my journey.</p>
+
+  <button id="speakBtn">🎤 Speak</button>
+  <br><br>
+
+  <input id="input" placeholder="Type or speak your question..." />
+  <br><br>
+
+  <button onclick="ask()">💬 Ask</button>
+
+  <div class="response" id="response"></div>
+  <p style="font-size:0.85em;color:#888;">No setup • No API key • Just talk</p>
+</div>
+<script>
+const input = document.getElementById("input");
+const responseDiv = document.getElementById("response");
+
+// 🎤 Speech Recognition
+document.getElementById("speakBtn").onclick = () => {
+  const SpeechRecognition =
+    window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  if (!SpeechRecognition) {
+    alert("Speech recognition not supported in this browser");
+    return;
+  }
+
+  const rec = new SpeechRecognition();
+  rec.lang = "en-US";
+
+  rec.onresult = e => {
+    input.value = e.results[0][0].transcript;
+    ask();
+  };
+
+  rec.start();
+};
+
+// 💬 Ask backend
+async function ask() {
+  const q = input.value;
+  if (!q) return;
+
+  responseDiv.innerText = "Thinking…";
+
+  try {
+    const res = await fetch("https://echokhushi-voicebot-2.onrender.com/ask", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question: q })
+    });
+
+    const data = await res.json();
+    responseDiv.innerText = data.answer;
+    speak(data.answer);
+  } catch (err) {
+    responseDiv.innerText = "Error talking to server";
+  }
+}
+
+// 🔊 Female voice TTS
+function speak(text) {
+  if (!("speechSynthesis" in window)) return;
+
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = "en-IN"; // 🇮🇳 Indian English
+
+  function chooseIndianFemaleVoice() {
+    const voices = speechSynthesis.getVoices();
+
+    // 1️⃣ Indian English female voices
+    let voice =
+      voices.find(v =>
+        v.lang === "en-IN" &&
+        /female|woman|veena|heera|lekha|ravi|zira/i.test(v.name)
+      )
+
+      // 2️⃣ Any Indian English voice
+      || voices.find(v => v.lang === "en-IN")
+
+      // 3️⃣ Fallback: English female
+      || voices.find(v =>
+        v.lang.startsWith("en") &&
+        /female|woman|zira|susan|samantha/i.test(v.name)
+      )
+
+      // 4️⃣ Last resort
+      || voices[0];
+
+    if (voice) utterance.voice = voice;
+
+    speechSynthesis.speak(utterance);
+  }
+
+  // Voices load async
+  if (speechSynthesis.getVoices().length === 0) {
+    speechSynthesis.onvoiceschanged = chooseIndianFemaleVoice;
+  } else {
+    chooseIndianFemaleVoice();
+  }
+}
+// function speak(text) {
+//   if (!("speechSynthesis" in window)) return;
+
+//   const utterance = new SpeechSynthesisUtterance(text);
+//   utterance.lang = "en-US";
+
+//   function setVoiceAndSpeak() {
+//     const voices = speechSynthesis.getVoices();
+
+//     const femaleVoice =
+//       voices.find(v => v.lang.startsWith("en") &&
+//         /female|woman|zira|susan|samantha/i.test(v.name)) ||
+//       voices.find(v => v.lang.startsWith("en")) ||
+//       voices[0];
+
+//     if (femaleVoice) utterance.voice = femaleVoice;
+
+//     speechSynthesis.speak(utterance);
+//   }
+
+//   if (speechSynthesis.getVoices().length === 0) {
+//     speechSynthesis.onvoiceschanged = setVoiceAndSpeak;
+//   } else {
+//     setVoiceAndSpeak();
+//   }
+// }
+</script>
+
+<!-- 
+<script>
+const input = document.getElementById("input");
+const responseDiv = document.getElementById("response");
+
+document.getElementById("speakBtn").onclick = () => {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const rec = new SpeechRecognition();
+  rec.lang = "en-US";
+  rec.onresult = e => {
+    input.value = e.results[0][0].transcript;
+    ask();
+  };
+  rec.start();
+};
+
+async function ask() {
+  const q = input.value;
+  if (!q) return;
+
+  responseDiv.innerText = "Thinking…";
+
+  const res = await fetch("/ask", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ question: q })
+  });
+
+  const data = await res.json();
+  responseDiv.innerText = data.answer;
+  speak(data.answer);
+}
+
+function speak(text) {
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "en-US";
+  speechSynthesis.speak(u);
+}
+</script> -->
+
+</body>
+</html>
