@@ -1,7 +1,6 @@
 import dns from "dns";
 dns.setDefaultResultOrder("verbatim");
 import cors from "cors";
-app.use(cors());
 
 import express from "express";
 //import fetch from "node-fetch";
@@ -11,8 +10,10 @@ dotenv.config();
 console.log("GROQ KEY:", process.env.GROQ_API_KEY);
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 app.use(express.static("public"));
+
 
 const SYSTEM_PROMPT = `
 You are Khushi Kumari.
